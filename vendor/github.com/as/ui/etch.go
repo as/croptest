@@ -7,8 +7,8 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/as/shiny/screen"
 	"github.com/as/shiny/math/f64"
+	"github.com/as/shiny/screen"
 )
 
 var screenRect = image.Rect(0, 0, 2048, 2048)

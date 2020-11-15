@@ -18,16 +18,14 @@ import (
 )
 
 var (
-	size   = image.Pt(2560, 1440)
-	w      = dev.Window()
-	dev, _ = ui.Init(&ui.Config{
-		Width: size.X, Height: size.Y,
-		Title: "harness",
-	})
-	img, _ = dev.NewBuffer(size)
-	fb     = img.RGBA()
-	down   uint
+	size = image.Pt(2560, 1440)
 
+	w   screen.Window
+	dev ui.Dev
+	img screen.Buffer
+	fb  *image.RGBA
+
+	down uint
 )
 
 var (
@@ -45,11 +43,7 @@ var (
 	white  = image.White
 )
 
-var fr = [...]*frame.Frame{
-	frame.New(fb, image.Rect(5, 5,             1024, 5+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: red, Back: black}}}),
-	frame.New(fb, image.Rect(5, 5+50,       1024, 5+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: yellow, Back: black}}}),
-	frame.New(fb, image.Rect(5, 5+50+50, 1024, 5+50+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: green, Back: black}}}),
-}
+var fr = [3]*frame.Frame{}
 
 var hz = time.NewTicker(time.Second / 128).C
 
@@ -59,8 +53,8 @@ var names = [3]string{
 	"zcrop",
 }
 var world = [3]image.Rectangle{
-	x1080, 
-	x720,  
+	x1080,
+	x720,
 	x720,
 }
 
@@ -104,7 +98,7 @@ func blank() {
 
 func redraw() {
 	world[2] = zcrop(world[0], world[1])
-	for i, fr := range fr{
+	for i, fr := range fr {
 		fr.Delete(0, fr.Len())
 		fmt.Fprintf(fr, "%s=%s (%s)", names[i], world[i], aspect(world[i]))
 	}
@@ -140,7 +134,6 @@ func gcd(a, b int) int {
 	}
 	return b
 }
-
 
 func center(r image.Rectangle) image.Point {
 	return r.Min.Add(r.Size().Div(2))
@@ -183,7 +176,21 @@ func print(src, c image.Rectangle) {
 }
 
 func main() {
+	dev, _ = ui.Init(&ui.Config{
+		Width: size.X, Height: size.Y,
+		Title: "harness",
+	})
+	w = dev.Window()
+	img, _ = dev.NewBuffer(size)
+	fb = img.RGBA()
 	d := screen.Dev
+
+	fr = [3]*frame.Frame{
+		frame.New(fb, image.Rect(5, 5, 1024, 5+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: red, Back: black}}}),
+		frame.New(fb, image.Rect(5, 5+50, 1024, 5+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: yellow, Back: black}}}),
+		frame.New(fb, image.Rect(5, 5+50+50, 1024, 5+50+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: green, Back: black}}}),
+	}
+
 	blank()
 	redraw()
 
@@ -197,7 +204,9 @@ func main() {
 				current = 0
 				fallthrough
 			case HasButton(1, down):
-				if current < 0{ current=1}
+				if current < 0 {
+					current = 1
+				}
 				for down != 0 {
 					select {
 					case e = <-d.Mouse:

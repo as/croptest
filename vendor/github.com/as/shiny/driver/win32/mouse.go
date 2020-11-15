@@ -1,4 +1,3 @@
-
 // +build windows
 
 package win32
