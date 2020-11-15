@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/as/font"
 	"github.com/as/frame"
 	"github.com/as/memdraw"
 	"github.com/as/shiny/event/key"
@@ -19,20 +20,41 @@ import (
 
 var (
 	size = image.Pt(2560, 1440)
-
-	w   screen.Window
-	dev ui.Dev
-	img screen.Buffer
-	fb  *image.RGBA
+	ft   = font.NewFace(18)
+	w    screen.Window
+	dev  ui.Dev
+	img  screen.Buffer
+	fb   *image.RGBA
 
 	down uint
 )
 
 var (
-	xvga  = image.Rect(0, 0, 640, 480)
-	x720  = image.Rect(0, 0, 1280, 720)
-	x1080 = image.Rect(0, 0, 1920, 1080)
+	x100      = image.Rect(0, 0, 100, 100)
+	xpal      = image.Rect(0, 0, 520, 576)
+	xpalplus  = image.Rect(0, 0, 520, 432)
+	xwxga     = image.Rect(0, 0, 1280, 800)
+	xvga      = image.Rect(0, 0, 640, 480)
+	x720      = image.Rect(0, 0, 1280, 720)
+	x900      = image.Rect(0, 0, 1600, 900)
+	x2k       = image.Rect(0, 0, 1440, 1080)
+	x1080     = image.Rect(0, 0, 1920, 1080)
+	xhivision = image.Rect(0, 0, 1920, 1235)
+	x2000     = image.Rect(0, 0, 2000, 1235)
 )
+
+var sources = [10]image.Rectangle{
+	x100,
+	xpal,
+	xpalplus,
+	xwxga,
+	xvga,
+	x720,
+	x900,
+	x2k,
+	x1080,
+	xhivision,
+}
 
 var (
 	black  = image.Black
@@ -102,6 +124,7 @@ func redraw() {
 		fr.Delete(0, fr.Len())
 		fmt.Fprintf(fr, "%s=%s (%s)", names[i], world[i], aspect(world[i]))
 	}
+	fmt.Fprintf(fr[2], "\nuse keys 0-9 to change source dimension, mouse1 to move ffmpeg crop window\narrow keys to adjust ffmpeg size\n")
 	memdraw.Border(fb, world[0], 5, image.ZP, red)
 	memdraw.Border(fb, world[1], 3, image.ZP, blue)
 	memdraw.Border(fb, world[0].Intersect(world[1]), 1, image.ZP, yellow)
@@ -115,7 +138,11 @@ func redraw() {
 // must be subtracted from r to maintain the aspect ratio
 func aspect(r image.Rectangle) (ar image.Point) {
 	s := r.Size()
-	return s.Div(gcd(s.X, s.Y))
+	g := gcd(s.X, s.Y)
+	if g != 0 {
+		return s.Div(g)
+	}
+	return s
 }
 
 // delta returns the difference between src and r
@@ -185,10 +212,11 @@ func main() {
 	fb = img.RGBA()
 	d := screen.Dev
 
+	dy := 30
 	fr = [3]*frame.Frame{
-		frame.New(fb, image.Rect(5, 5, 1024, 5+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: red, Back: black}}}),
-		frame.New(fb, image.Rect(5, 5+50, 1024, 5+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: yellow, Back: black}}}),
-		frame.New(fb, image.Rect(5, 5+50+50, 1024, 5+50+50+50), &frame.Config{Color: frame.Color{Palette: frame.Palette{Text: green, Back: black}}}),
+		frame.New(fb, image.Rect(5, 5+dy*0, 1024, 5+dy*1), &frame.Config{Face: ft, Color: frame.Color{Palette: frame.Palette{Text: red, Back: black}}}),
+		frame.New(fb, image.Rect(5, 5+dy*1, 1024, 5+dy*2), &frame.Config{Face: ft, Color: frame.Color{Palette: frame.Palette{Text: blue, Back: black}}}),
+		frame.New(fb, image.Rect(5, 5+dy*2, 1024, 5+dy*5), &frame.Config{Face: ft, Color: frame.Color{Palette: frame.Palette{Text: green, Back: black}}}),
 	}
 
 	blank()
@@ -227,14 +255,16 @@ func main() {
 			}
 			blank()
 			switch e.Code {
+			case 30, 31, 32, 33, 34, 35, 36, 37, 38, 39:
+				world[0] = sources[e.Code-30]
 			case key.CodeRightArrow:
-				world[1].Max.X++
+				world[1].Max.X += 5
 			case key.CodeLeftArrow:
-				world[1].Min.X--
+				world[1].Max.X -= 3
 			case key.CodeUpArrow:
-				world[1].Max.Y--
+				world[1].Max.Y -= 3
 			case key.CodeDownArrow:
-				world[1].Max.Y++
+				world[1].Max.Y += 5
 			}
 			redraw()
 		case e := <-d.Size:
