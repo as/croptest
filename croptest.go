@@ -60,7 +60,7 @@ var (
 	black  = image.Black
 	red    = image.NewUniform(color.RGBA{255, 0, 0, 255})
 	green  = image.NewUniform(color.RGBA{0, 255, 0, 255})
-	blue   = image.NewUniform(color.RGBA{0, 0, 255, 255})
+	blue   = image.NewUniform(color.RGBA{64, 64, 255, 255})
 	yellow = image.NewUniform(color.RGBA{255, 255, 0, 255})
 	white  = image.White
 )
